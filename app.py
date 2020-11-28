@@ -1,21 +1,25 @@
 import urllib.parse
 import random
+import os.path
 from flask import Flask, request, session
 
 
 app = Flask(__name__)
 app.secret_key = b'yaddayadda'
+
 questions = [
     'Onko kivaa?',
     'Ei ole.',
 ]
+
 
 @app.route('/save', methods=['POST'])
 def save_answer():
     if 'id' not in session:
         raise Exception("Question id not found!")
     qid = session['id']
-    session['answer{}'.format(qid)] = request.get_data()[7:].decode('utf-8')
+    with open("answer{}.html".format(qid), "w") as handle:
+        handle.write(urllib.parse.unquote_plus(request.get_data()[7:].decode('utf-8')))
     return {}
 
 
@@ -25,8 +29,9 @@ def index():
         session['id'] = random.randint(0, len(questions) - 1)
     qid = session['id']
     question = questions[qid]
-    if 'answer{}'.format(qid) in session:
-        answer = urllib.parse.unquote_plus(session['answer{}'.format(qid)])
+    if os.path.exists("answer{}.html".format(qid)):
+        with open("answer{}.html".format(qid), "r") as handle:
+            answer = handle.read()
     else:
         answer = ""
     return r"""

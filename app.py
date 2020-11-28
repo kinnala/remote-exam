@@ -1,19 +1,32 @@
 import urllib.parse
+import random
 from flask import Flask, request, session
 
-app = Flask(__name__)
 
+app = Flask(__name__)
 app.secret_key = b'yaddayadda'
+questions = [
+    'Onko kivaa?',
+    'Ei ole.',
+]
 
 @app.route('/save', methods=['POST'])
 def save_answer():
-    session['answer'] = request.get_data()[7:].decode('utf-8')
+    if 'id' not in session:
+        raise Exception("Question id not found!")
+    qid = session['id']
+    session['answer{}'.format(qid)] = request.get_data()[7:].decode('utf-8')
     return {}
+
 
 @app.route('/')
 def index():
-    if 'answer' in session:
-        answer = urllib.parse.unquote_plus(session['answer'])
+    if 'id' not in session:
+        session['id'] = random.randint(0, len(questions) - 1)
+    qid = session['id']
+    question = questions[qid]
+    if 'answer{}'.format(qid) in session:
+        answer = urllib.parse.unquote_plus(session['answer{}'.format(qid)])
     else:
         answer = ""
     return r"""
@@ -21,7 +34,7 @@ def index():
 <html>
 <head>
   <meta charset='utf-8'>
-  <title>Remote exam</title>
+  <title>Koe</title>
   <link rel="stylesheet" type="text/css" href="//unpkg.com/@digabi/mathquill/build/mathquill.css">
   <link rel="stylesheet" type="text/css" href="//unpkg.com/rich-text-editor/dist/rich-text-editor.css"/>
   <script src="//code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
@@ -45,14 +58,13 @@ def index():
 <body>
 <article>
   <section>
-    <h1>Remote exam</h1>
-    <h2>Answer</h2>
+    <h2>Kysymys</h2>
+""" + question + r"""
+    <h2>Vastaus</h2>
     <div class="answer" id="answer1">
 """ + answer + r"""</div>
   </section>
 </article>
-<div>Import: <input  type="file" id="input"></div>
-<div><a download="math-demo-answer.html" id="export" href="javascript:void(0)">Export</a></div>
 <div class="result">\({}\)</div>
 <script>
   MathJax.Hub.Config({

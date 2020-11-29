@@ -1,17 +1,18 @@
 import urllib.parse
 import random
 import os.path
-from flask import Flask, request, session
+from flask import Flask, request, session, redirect, url_for, send_from_directory
 
 
 app = Flask(__name__)
 app.secret_key = b'yaddayadda'
 
-questions = [
-    'Onko kivaa?',
-    'Ei ole.',
-]
 
+questions = [
+    'Tervetuloa suorittamaan etäkoetta.  Järjestelmä näyttää yhden tehtävän kerrallaan.  Aikaisempaan tehtävään ei voi palata.  Kirjoita nimesi alla olevaan kenttään ja paina "Seuraava tehtävä".',
+]
+questions.append(r"""Ratkaise epäyhtälö <img src="https://latex.codecogs.com/png.latex?x^3<x" title="x^3<x" />.""")
+#with open("exam-content.json
 
 @app.route('/save', methods=['POST'])
 def save_answer():
@@ -23,10 +24,37 @@ def save_answer():
     return {}
 
 
+@app.route('/done')
+def finish():
+    session['id'] = -1
+    return r"Koe on päättynyt. Voit sulkea välilehden."
+
+
+@app.route('/next')
+def load_next():
+    if 'id' not in session:
+        raise Exception("Question id not found!")
+    remaining = []
+    for itr in range(len(questions)):
+        if not os.path.exists("answer{}.html".format(itr)):
+            remaining.append(itr)
+    if len(remaining) == 0:
+        return redirect(url_for('finish'))
+    session['id'] = remaining[random.randint(0, len(remaining) - 1)]
+    return redirect(url_for('index'))
+
+
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
+
+
 @app.route('/')
 def index():
     if 'id' not in session:
-        session['id'] = random.randint(0, len(questions) - 1)
+        session['id'] = 0
+    if session['id'] < 0:
+        return redirect(url_for('finish'))
     qid = session['id']
     question = questions[qid]
     if os.path.exists("answer{}.html".format(qid)):
@@ -39,11 +67,11 @@ def index():
 <html>
 <head>
   <meta charset='utf-8'>
-  <title>Koe</title>
+  <title>Etäkoe</title>
   <link rel="stylesheet" type="text/css" href="//unpkg.com/@digabi/mathquill/build/mathquill.css">
   <link rel="stylesheet" type="text/css" href="//unpkg.com/rich-text-editor/dist/rich-text-editor.css"/>
-  <script src="//code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/bacon.js/1.0.1/Bacon.min.js"></script>
+  <script src="static/jquery-3.4.1.min.js"></script>
+  <script src="static/Bacon.min.js"></script>
   <script src="//unpkg.com/rich-text-editor/dist/rich-text-editor-bundle.js"></script>
   <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js">
   </script>
@@ -63,11 +91,13 @@ def index():
 <body>
 <article>
   <section>
+    <h1>Etäkoe</h1>
     <h2>Kysymys</h2>
 """ + question + r"""
     <h2>Vastaus</h2>
     <div class="answer" id="answer1">
 """ + answer + r"""</div>
+    <a class="confirm" href="/next">Seuraava tehtävä</a>
   </section>
 </article>
 <div class="result">\({}\)</div>
@@ -112,7 +142,16 @@ def index():
       $(".answer").on("keyup", function (e) {
         $.post("/save", {answer: $(".answer").html()});
       });
-   });
+  });
+
+  $(".confirm").on("click", function(event){
+      if(confirm("Onko tehtävä varmasti valmis? Aikaisempiin tehtäviin ei voi palata.")){
+         return true;
+      } else {
+          event.preventDefault();
+          return false;
+      }
+  });
   
   const encodeMultibyteUnicodeCharactersWithEntities = (str) =>
     str.replace(/[^\x00-\xFF]/g, c => `&#${c.charCodeAt(0).toString(10)};`)
@@ -173,8 +212,6 @@ def index():
   } else {
     window.onerror = trackError
   }
-
-//    <input  type="file" id="input">
 
   const reader = new FileReader()
   reader.onload = x => $('.answer').html(x.target.result)

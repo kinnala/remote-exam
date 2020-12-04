@@ -9,14 +9,11 @@ app.secret_key = b'yaddayadda'
 
 
 questions = [
-    'Tervetuloa suorittamaan etäkoetta.  Järjestelmä näyttää yhden tehtävän kerrallaan.  Aikaisempaan tehtävään ei voi palata.  Kirjoita nimesi alla olevaan kenttään ja paina "Seuraava tehtävä".',
+    'Tervetuloa suorittamaan etäkoetta.  Järjestelmä näyttää yhden tehtävän kerrallaan.  Aikaisempaan tehtävään ei voi palata.  Kirjoita nimesi alla olevaan kenttään ja paina "Seuraava tehtävä" aloittaaksesi kokeen.',
 ]
-questions.append(r"""Ratkaise yhtälö <img src="https://latex.codecogs.com/png.latex?{}" />.""".format(urllib.parse.quote_plus("3x^2+3x-18=0")))
-questions.append(r"""Ratkaise epäyhtälö <img src="https://latex.codecogs.com/png.latex?{}" />.""".format(urllib.parse.quote_plus("x^3<x")))
-questions.append(r"""Sievennä <img src="https://latex.codecogs.com/png.latex?{}" />.""".format(urllib.parse.quote_plus("\sqrt{40}")))
-questions.append(r"""Sievennä <img src="https://latex.codecogs.com/png.latex?{}" />.""".format(urllib.parse.quote_plus(r"\frac{x^2-1}{x+1}")))
-questions.append(r"""Montako juurta on toisen asteen polynomilla, jonka diskriminantti on 3? (Pelkkä luku riittää.)""")
-questions.append(r"""Montako juurta on polynomilla <img src="https://latex.codecogs.com/png.latex?{}" />? (Pelkkä luku riittää.)""".format(urllib.parse.quote_plus("x^2+2x+1")))
+questions.append(r"""Ratkaise epäyhtälö <img src="https://latex.codecogs.com/png.latex?{}" /> ilman laskinohjelmaa.""".format(urllib.parse.quote_plus("x^3<x")))
+questions.append(r"""Tom sijoittaa 30-vuotiaana 50 000 euroa indeksirahastoon. Mikä vuotuisen tuottoprosentin tulee keskimäärin olla, jotta sijoitusten arvo on miljoona euroa hänen jäätyään eläkkeelle 65-vuotiaana?""")
+questions.append(r"""Millä parametrin b arvolla polynomilla <img src="https://latex.codecogs.com/png.latex?{}" /> on kaksi juurta? Perustele miksi vain ja ainoastaan antamasi b:n arvot kelpaavat vastaukseksi.""".format(urllib.parse.quote_plus("x^3+x^2-b^2x-b^2")))
 
 
 @app.route('/save', methods=['POST'])
@@ -30,6 +27,12 @@ def save_answer():
     with open("answer_{}_{}.html".format(qid, uid), "w") as handle:
         handle.write(urllib.parse.unquote_plus(request.get_data()[7:].decode('utf-8')))
     return {}
+
+
+@app.route('/clearsession')  # TODO obfuscate url?
+def clear_session():
+    session.clear()
+    return r"Keksi tyhjennetty."
 
 
 @app.route('/done')

@@ -90,7 +90,7 @@ def index(uid):
 <html>
 <head>
   <meta charset='utf-8'>
-  <title>Etäkoe</title>
+  <title>remote-exam v0.1.0</title>
   <link rel="stylesheet" type="text/css" href="//unpkg.com/@digabi/mathquill/build/mathquill.css">
   <link rel="stylesheet" type="text/css" href="//unpkg.com/rich-text-editor/dist/rich-text-editor.css"/>
   <script src="//code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
@@ -114,7 +114,7 @@ def index(uid):
 <body>
 <article>
   <section>
-    <h1>Etäkoe</h1>
+    <h1>Koe</h1>
     <h2>Kysymys</h2>
 """ + question + r"""
     <h2>Vastaus</h2>
@@ -161,13 +161,17 @@ def index(uid):
     math = MathJax.Hub.getAllJax('MathOutput')[0]
   })
 
-  $(function () {
-      $(".answer").on("keyup", function (e) {
-        $.post("/save", {answer: $(".answer").html()});
-      });
+  function saveAnswer() {
+    $.post("/save", {answer: $(".answer").html()});
+    setTimeout(saveAnswer, 5000);
+  }
+
+  $(document).ready(function() {
+    setTimeout(saveAnswer, 5000);
   });
 
   $(".confirm").on("click", function(event){
+      $.post("/save", {answer: $(".answer").html()});
       if(confirm("Onko tehtävä varmasti valmis? Aikaisempiin tehtäviin ei voi palata.")){
          return true;
       } else {

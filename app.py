@@ -2,18 +2,11 @@ import urllib.parse
 import random
 import os.path
 from flask import Flask, request, session, redirect, url_for, send_from_directory
+from exercises import questions
 
 
 app = Flask(__name__)
 app.secret_key = b'yaddayadda'
-
-
-questions = [
-    'Tervetuloa suorittamaan etäkoetta.  Järjestelmä näyttää yhden tehtävän kerrallaan.  Aikaisempaan tehtävään ei voi palata.  Kirjoita nimesi alla olevaan kenttään ja paina "Seuraava tehtävä" aloittaaksesi kokeen.',
-]
-questions.append(r"""Ratkaise epäyhtälö <img src="https://latex.codecogs.com/png.latex?{}" /> ilman laskinohjelmaa.""".format(urllib.parse.quote_plus("x^3<x")))
-questions.append(r"""Tom sijoittaa 30-vuotiaana 50 000 euroa indeksirahastoon. Mikä vuotuisen tuottoprosentin tulee keskimäärin olla, jotta sijoitusten arvo on miljoona euroa hänen jäätyään eläkkeelle 65-vuotiaana?""")
-questions.append(r"""Millä parametrin b arvolla polynomilla <img src="https://latex.codecogs.com/png.latex?{}" /> on kaksi juurta? Perustele miksi vain ja ainoastaan antamasi b:n arvot kelpaavat vastaukseksi.""".format(urllib.parse.quote_plus("x^3+x^2-b^2x-b^2")))
 
 
 @app.route('/save', methods=['POST'])
@@ -48,8 +41,6 @@ def finish():
 
 @app.route('/next')
 def load_next():
-    if 'id' not in session:
-        raise Exception("Question id not found!")
     if 'uid' not in session:
         raise Exception("User id not found!")
     uid = session['uid']
@@ -76,8 +67,8 @@ def test():
 @app.route('/exam/<uid>')
 def index(uid):
     if 'id' not in session:
-        session['id'] = 0
         session['uid'] = uid
+        return redirect(url_for('load_next'))
     if 'uid' in session:
         if not session['uid'] == uid:
             print('CHEAT uid {} accessing {}'.format(session['uid'], uid))
@@ -85,7 +76,7 @@ def index(uid):
     if session['id'] < 0:
         return redirect(url_for('finish'))
     qid = session['id']
-    question = questions[qid]
+    question = questions[qid](int.from_bytes(uid.encode("utf-8"), byteorder="big"))
     fname = "answer_{}_{}.html".format(qid, uid)
     if os.path.exists(fname):
         with open(fname, "r") as handle:

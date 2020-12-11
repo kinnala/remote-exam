@@ -1,9 +1,14 @@
 import urllib.parse
 import random
 import secrets
+import time
+import zipfile
 import logging
 import os.path
-from flask import Flask, request, session, redirect, url_for, send_from_directory
+from pathlib import Path
+from io import BytesIO
+from datetime import datetime
+from flask import Flask, request, session, redirect, url_for, send_file
 from exercises import questions
 
 
@@ -17,10 +22,8 @@ app.config.update(
 
 @app.route('/save', methods=['POST'])
 def save_answer():
-    if 'id' not in session:
-        raise Exception("Question id not found!")
-    if 'uid' not in session:
-        raise Exception("User id not found!")
+    if 'id' not in session or 'uid' not in session:
+        raise Exception("Session is broken.")
     qid = session['id']
     uid = session['uid']
     app.logger.info("{} saving status on answer {}".format(uid, qid))
@@ -29,9 +32,9 @@ def save_answer():
     return {}
 
 
-clear_route = secrets.token_urlsave(10)
-app.logger.info("Route for clearing session cookie: /{}".format(clear_route))
-@app.route('/{}'.format(clear_route))
+clear_route = secrets.token_urlsafe(10)
+app.logger.info("Route for clearing the session cookie: /clear{}".format(clear_route))
+@app.route('/clear{}'.format(clear_route))
 def clear_session():
     session.clear()
     return r"Sessiokeksi tyhjennetty."
@@ -39,11 +42,9 @@ def clear_session():
 
 @app.route('/done')
 def finish():
-    if 'id' not in session:
-        raise Exception("Question id not found!")
+    if 'id' not in session or 'uid' not in session:
+        raise Exception("Session is broken.")
     session['id'] = -1
-    if 'uid' not in session:
-        raise Exception("User id not found!")
     app.logger.info("DONE uid {} finished exam.".format(session['uid']))
     return r"<h1>Koe päättynyt</h1><p>Voit sulkea välilehden.</p>"
 
@@ -51,7 +52,7 @@ def finish():
 @app.route('/next')
 def load_next():
     if 'uid' not in session:
-        raise Exception("User id not found!")
+        raise Exception("Session is broken")
     uid = session['uid']
     remaining = []
     for itr in range(len(questions)):
@@ -63,9 +64,25 @@ def load_next():
     return redirect(url_for('index', uid=uid))
 
 
-@app.route('/static/<path:path>')
-def send_static(path):
-    return send_from_directory('static', path)
+fetch_route = secrets.token_urlsafe(10)
+app.logger.info("Route for fetching answers: /fetch{}".format(fetch_route))
+@app.route('/fetch{}'.format(fetch_route))
+def fetch_answers():
+    pathlist = Path('answers').glob('*.html')
+    files = [{
+        'name': path.name,
+        'data': path.read_text(),
+    } for path in pathlist]
+    memory_file = BytesIO()
+    with zipfile.ZipFile(memory_file, 'w') as zf:
+        for singlefile in files:
+            data = zipfile.ZipInfo(singlefile['name'])
+            data.date_time = time.localtime(time.time())[:6]
+            data.compress_type = zipfile.ZIP_DEFLATED
+            zf.writestr(data, singlefile['data'])
+    memory_file.seek(0)
+    zipfilename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".zip"
+    return send_file(memory_file, attachment_filename=zipfilename, as_attachment=True)
 
 
 @app.route('/')

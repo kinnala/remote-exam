@@ -1,12 +1,18 @@
 import urllib.parse
 import random
+import secrets
+import logging
 import os.path
 from flask import Flask, request, session, redirect, url_for, send_from_directory
 from exercises import questions
 
 
 app = Flask(__name__)
-app.secret_key = b'yaddayadda'
+app.logger.setLevel(logging.INFO)
+app.secret_key = secrets.token_bytes(10)
+app.config.update(
+    PERMANENT_SESSION_LIFETIME=36000  # 10 hours
+)
 
 
 @app.route('/save', methods=['POST'])
@@ -17,15 +23,18 @@ def save_answer():
         raise Exception("User id not found!")
     qid = session['id']
     uid = session['uid']
+    app.logger.info("{} saving status on answer {}".format(uid, qid))
     with open("answer_{}_{}.html".format(qid, uid), "w") as handle:
         handle.write(urllib.parse.unquote_plus(request.get_data()[7:].decode('utf-8')))
     return {}
 
 
-@app.route('/clearsession')  # TODO obfuscate url?
+clear_route = secrets.token_urlsave(10)
+app.logger.info("Route for clearing session cookie: /{}".format(clear_route))
+@app.route('/{}'.format(clear_route))
 def clear_session():
     session.clear()
-    return r"Keksi tyhjennetty."
+    return r"Sessiokeksi tyhjennetty."
 
 
 @app.route('/done')
@@ -35,8 +44,8 @@ def finish():
     session['id'] = -1
     if 'uid' not in session:
         raise Exception("User id not found!")
-    print("DONE uid {} finished exam.".format(session['uid']))
-    return r"Koe on päättynyt. Voit sulkea välilehden."
+    app.logger.info("DONE uid {} finished exam.".format(session['uid']))
+    return r"<h1>Koe päättynyt</h1><p>Voit sulkea välilehden.</p>"
 
 
 @app.route('/next')
@@ -61,7 +70,7 @@ def send_static(path):
 
 @app.route('/')
 def test():
-    return "Yhteys koejärjestelmään toimii.  Odota, että saat opettajalta linkin varsinaiseen kokeeseen."
+    return "<h1>Yhteystesti</h1><p>Yhteys koejärjestelmään toimii.  Odota, että saat opettajalta linkin varsinaiseen kokeeseen.</p>"
 
 
 @app.route('/exam/<uid>')
@@ -71,8 +80,8 @@ def index(uid):
         return redirect(url_for('load_next'))
     if 'uid' in session:
         if not session['uid'] == uid:
-            print('CHEAT uid {} accessing {}'.format(session['uid'], uid))
-            return "Huijaamisyritys havaittu.  Molempien osapuolten koesuoritukset mitätöidään."
+            app.logger.info('CHEAT uid {} accessing {}'.format(session['uid'], uid))
+            return "<h1>Huijaamisyritys havaittu</h1><p>Molempien osapuolten koesuoritukset mitätöidään.</p>"
     if session['id'] < 0:
         return redirect(url_for('finish'))
     qid = session['id']

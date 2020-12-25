@@ -33,7 +33,7 @@ def save_answer():
 
 
 clear_route = secrets.token_urlsafe(10)
-app.logger.info("Route for clearing the session cookie: /clear{}".format(clear_route))
+app.logger.info("Route for clearing the user's session cookie: /clear{}".format(clear_route))
 @app.route('/clear{}'.format(clear_route))
 def clear_session():
     session.clear()

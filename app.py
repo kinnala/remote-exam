@@ -27,7 +27,7 @@ def save_answer():
     qid = session['id']
     uid = session['uid']
     app.logger.info("{} saving status on answer {}".format(uid, qid))
-    with open("answer_{}_{}.html".format(qid, uid), "w") as handle:
+    with open("answers/answer_{}_{}.html".format(qid, uid), "w") as handle:
         handle.write(urllib.parse.unquote_plus(request.get_data()[7:].decode('utf-8')))
     return {}
 
@@ -56,7 +56,7 @@ def load_next():
     uid = session['uid']
     remaining = []
     for itr in range(len(questions)):
-        if not os.path.exists("answer_{}_{}.html".format(itr, uid)):
+        if not os.path.exists("answers/answer_{}_{}.html".format(itr, uid)):
             remaining.append(itr)
     if len(remaining) == 0:
         return redirect(url_for('finish'))
@@ -103,7 +103,7 @@ def index(uid):
         return redirect(url_for('finish'))
     qid = session['id']
     question = questions[qid](int.from_bytes(uid.encode("utf-8"), byteorder="big"))
-    fname = "answer_{}_{}.html".format(qid, uid)
+    fname = "answers/answer_{}_{}.html".format(qid, uid)
     if os.path.exists(fname):
         with open(fname, "r") as handle:
             answer = handle.read()

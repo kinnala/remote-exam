@@ -1,6 +1,17 @@
 # remote-exam
 
-A minimalistic Flask app for using `digabi/rich-text-editor` in remote exams.
+A minimalistic Flask app for using [https://math-demo.abitti.fi/](digabi/rich-text-editor) in remote exams.
+
+## Installing
+
+Make sure that you have Python 3 and Flask, e.g.,
+```
+pip install flask
+```
+Then you can clone this repository:
+```
+git clone https://github.com/kinnala/remote-exam.git
+```
 
 ## Starting the server
 

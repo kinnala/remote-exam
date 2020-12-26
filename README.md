@@ -1,6 +1,6 @@
 # remote-exam
 
-A minimalistic Flask app for using [https://math-demo.abitti.fi/](digabi/rich-text-editor) in remote exams.
+A minimalistic Flask app for using [digabi/rich-text-editor](https://math-demo.abitti.fi/) in remote exams.
 
 ## Installing
 

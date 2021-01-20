@@ -37,7 +37,7 @@ app.logger.info("Route for clearing the user's session cookie: /clear{}".format(
 @app.route('/clear{}'.format(clear_route))
 def clear_session():
     session.clear()
-    return r"Sessiokeksi tyhjennetty."
+    return r"<p>Istuntoon liittyvät tiedot poistettu.</p>"
 
 
 @app.route('/done')
@@ -46,7 +46,7 @@ def finish():
         raise Exception("Session is broken.")
     session['id'] = -1
     app.logger.info("DONE uid {} finished exam.".format(session['uid']))
-    return r"<h1>Koe päättynyt</h1><p>Voit sulkea välilehden.</p>"
+    return r"<p>Koe on päättynyt. Voit sulkea välilehden.</p>"
 
 
 @app.route('/next')
@@ -85,9 +85,36 @@ def fetch_answers():
     return send_file(memory_file, attachment_filename=zipfilename, as_attachment=True)
 
 
+@app.route('/wrong')
+def wrong():
+    return """Koodi puuttuu. Pyydä koodi opettajalta ja <a href="/">palaa takaisin alkuun</a>."""
+
+
 @app.route('/')
 def test():
-    return "<h1>Yhteystesti</h1><p>Yhteys koejärjestelmään toimii.  Odota, että saat opettajalta linkin varsinaiseen kokeeseen.</p>"
+    return r"""
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="//code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+  <script>
+  $(document).ready(function(){
+    $(frm.txt).keyup(function(){
+      $(frm).get(0).setAttribute('action', '/exam/'+$(frm.txt).val());
+    });
+  });
+  </script>
+</head>
+<body>
+  <h1>Koejärjestelmä</h1>
+  <p>Syötä opettajalta saamasi koodi alla olevaan ruutuun.</p>
+  <form id="frm" action="wrong">
+    <input type="text" id="txt" />
+    <input type="submit" id="sub" value="Aloita koe" />
+  </form>
+</body>
+</html>
+"""
 
 
 @app.route('/exam/<uid>')
@@ -98,7 +125,7 @@ def index(uid):
     if 'uid' in session:
         if not session['uid'] == uid:
             app.logger.info('CHEAT uid {} accessing {}'.format(session['uid'], uid))
-            return "<h1>Huijaamisyritys havaittu</h1><p>Molempien osapuolten koesuoritukset mitätöidään.</p>"
+            return "<p>Huijaamisyritys havaittu.</p>"
     if session['id'] < 0:
         return redirect(url_for('finish'))
     qid = session['id']
@@ -170,7 +197,7 @@ def index(uid):
           reader.readAsDataURL(data)
         })
     },
-    baseUrl: 'http://localhost:5000',
+    baseUrl: 'https://math-demo.abitti.fi',
     updateMathImg: ($img, latex) => {
       updateMath(latex, svg => {
         $img.prop({
